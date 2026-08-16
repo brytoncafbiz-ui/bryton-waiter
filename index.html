@@ -102,6 +102,7 @@ var state = {
   search: "",
   mode: "dinein",      // dinein | takeaway
   table: "",
+  orderType: "first",  // first | additional (dine-in only)
   cart: [],            // [{ menuId, name, qty, variants:[{group,name,price}], note, unit }]
   sheet: null,         // variant/config sheet item
 };
@@ -217,7 +218,12 @@ function renderOrder(){
     '<button class="chip '+(state.mode==="takeaway"?"on":"")+'" style="flex:1;text-align:center" onclick="setMode(\'takeaway\')">Takeaway</button>'+
     '</div>'+
     (state.mode==="dinein"
-      ? '<input id="tbl" class="inp" placeholder="Table number (e.g. 12)" value="'+esc(state.table)+'" oninput="state.table=this.value" autocomplete="off">'
+      ? '<input id="tbl" class="inp" placeholder="Table number (e.g. 12)" value="'+esc(state.table)+'" oninput="state.table=this.value" autocomplete="off">'+
+        '<div class="lbl" style="margin:12px 0 6px">This order is</div>'+
+        '<div class="row">'+
+        '<button class="chip '+(state.orderType==="first"?"on":"")+'" style="flex:1;text-align:center" onclick="setOtype(\'first\')">First order</button>'+
+        '<button class="chip '+(state.orderType==="additional"?"on":"")+'" style="flex:1;text-align:center" onclick="setOtype(\'additional\')">Additional order</button>'+
+        '</div>'
       : '<p class="tiny faint" style="margin:2px">No table needed for takeaway.</p>')+
     '</div>';
 
@@ -257,6 +263,7 @@ function renderOrder(){
 window.onSearch = function(v){ state.search=v; var a=document.activeElement; renderOrder(); /* keep focus */ var i=document.querySelector('input[placeholder="Search menu…"]'); if(i){ i.focus(); i.setSelectionRange(v.length,v.length);} };
 window.setCat = function(c){ state.cat=c; renderOrder(); };
 window.setMode = function(m){ state.mode=m; renderOrder(); };
+window.setOtype = function(t){ state.orderType=t; renderOrder(); };
 
 /* ---- tap an item: add directly, or open variant sheet ---- */
 window.tapItem = function(id){
@@ -365,7 +372,7 @@ window.openCart = function(){
     '<div style="display:flex;justify-content:space-between;margin:14px 2px;font-weight:800">'+
     '<span>Total ('+cartCount()+')</span><span class="gold display" style="font-size:18px">'+money(cartTotal())+'</span></div>'+
     (state.mode==="dinein"
-      ? '<div class="tiny muted" style="margin:0 2px 12px">Table: <b>'+(state.table.trim()||'— not set —')+'</b></div>'
+      ? '<div class="tiny muted" style="margin:0 2px 12px">Table: <b>'+(state.table.trim()||'— not set —')+'</b> · <b>'+(state.orderType==="additional"?"Additional order":"First order")+'</b></div>'
       : '<div class="tiny muted" style="margin:0 2px 12px">Takeaway order</div>')+
     '<button class="btn btn-sage" onclick="sendOrder()">Send to cashier</button>'+
     '<div class="row" style="margin-top:9px">'+
@@ -393,6 +400,7 @@ function buildOrder(){
     waiter: state.waiter,
     suggestedTable: state.mode==="dinein" ? state.table.trim() : "",
     takeaway: state.mode==="takeaway",
+    additional: state.mode==="dinein" && state.orderType==="additional",
     items: state.cart.map(function(l){
       return { menuId:l.menuId, name:l.name, qty:l.qty, variants:l.variants, note:l.note, price:l.unit };
     }),
